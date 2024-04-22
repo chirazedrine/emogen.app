@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>EmoGen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div class="banner">
+      <div class="container">
+        <div class="d-flex align-items-center">
+          <img src="../assets/icon.png" alt="EmoGen Logo" class="logo mr-3">
+          <h1 class="title mb-0">EmoGen</h1>
+        </div>
+      </div>
+    </div>
+
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h2 class="mb-4">Select Mode</h2>
+              <div class="mb-4">
+                <button class="btn btn-primary mr-3" @click="selectMode('detection')">Emotion Detection</button>
+                <button class="btn btn-primary" @click="selectMode('generation')">Emotion Generation</button>
+              </div>
+
+              <div v-if="selectedMode === 'detection'">
+                <h3 class="mb-4">Select Image:</h3>
+                <input type="file" class="form-control-file mb-4" @change="onImageSelected">
+                <button class="btn btn-primary" @click="runDetection">Submit</button>
+                <div class="mt-4" v-if="detectionResult">
+                  <h4>Detected Emotion:</h4>
+                  <p>{{ detectionResult }}</p>
+                </div>
+              </div>
+
+              <div v-if="selectedMode === 'generation'">
+                <h3 class="mb-4">Select Emotion:</h3>
+                <select class="form-control mb-4" v-model="selectedEmotion">
+                  <option value="amusement">Amusement</option>
+                  <option value="anger">Anger</option>
+                  <option value="awe">Awe</option>
+                  <option value="contentment">Contentment</option>
+                  <option value="disgust">Disgust</option>
+                  <option value="excitement">Excitement</option>
+                  <option value="fear">Fear</option>
+                  <option value="sadness">Sadness</option>
+                </select>
+                <button class="btn btn-primary" @click="runGeneration">Generate</button>
+                <div class="mt-4" v-if="generatedImage">
+                  <h4>Generated Image:</h4>
+                  <img :src="generatedImage" class="img-fluid">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="../src/renderer.js"></script>
+</body>
+</html>

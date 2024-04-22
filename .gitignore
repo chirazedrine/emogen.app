@@ -1,0 +1,44 @@
+# Node.js modules
+node_modules/
+
+# Python bytecode
+*.pyc
+__pycache__/
+
+# Electron build output
+dist/
+out/
+build/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# PyTorch model files
+*.pth
+*.pt
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+
+# IDE files
+.vscode/
+.idea/
+
+# Miscellaneous
+.cache/
+.pytest_cache/
+.coverage
+.coverage.*
+*.orig
+*.swp
+*.swo
+*.bak
+*.tmp
+*.temp
