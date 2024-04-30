@@ -33,14 +33,6 @@ pip install -r requirements.txt
 npm start
 ```
 
-## Usage
-
-1. Launch the Emogen App.
-2. Click on the "Select Image" button to choose an image file.
-3. The app will process the image and display the detected emotions.
-4. Explore the detailed analysis and visualization of the emotions.
-5. Save the results or export them for further analysis.
-
 ## Methodology and models
 
 ### Emotion detection
