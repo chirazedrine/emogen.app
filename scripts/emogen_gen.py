@@ -1,12 +1,11 @@
 import sys
 import torch
-from diffusers import StableDiffusionXLPipeline, DPMSolverMultistepScheduler
-from PIL import Image, UnidentifiedImageError
+from diffusers import StableDiffusionImg2ImgPipeline, DPMSolverMultistepScheduler
+from PIL import Image
 from torchvision import transforms
 from torchvision.models import efficientnet_b4, EfficientNet_B4_Weights
 from dotenv import load_dotenv
 import os
-from tqdm import tqdm
 
 def generate_image_with_emotion(input_image_path, desired_emotion, model_path):
     # Load the emotion detection model
@@ -19,7 +18,7 @@ def generate_image_with_emotion(input_image_path, desired_emotion, model_path):
 
     # Image transformations for emotion detection
     transform = transforms.Compose([
-        transforms.Resize((380, 380)),  # Adjust the image size to match EfficientNet-B4 input size
+        transforms.Resize((380, 380)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
@@ -28,66 +27,44 @@ def generate_image_with_emotion(input_image_path, desired_emotion, model_path):
     load_dotenv()
     access_token = os.getenv("ACCESS_TOKEN")
 
-    # Load Stable Diffusion XL model
-    model_id = "stabilityai/stable-diffusion-xl-base-1.0"  # Updated model identifier
+    # Load Stable Diffusion 2.1 img2img model
+    model_id = "stabilityai/stable-diffusion-2-1"
     scheduler = DPMSolverMultistepScheduler.from_pretrained(model_id, subfolder="scheduler", use_auth_token=access_token)
-    pipe = StableDiffusionXLPipeline.from_pretrained(model_id, scheduler=scheduler, torch_dtype=torch.float32, added_cond_kwargs={})
-    pipe.safety_checker = None  # Disable the safety checker
+    pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, scheduler=scheduler, torch_dtype=torch.float32, use_auth_token=access_token)
     pipe = pipe.to("cpu")
 
     # Load and preprocess the input image
     input_image = Image.open(input_image_path).convert("RGB")
-    input_image_resized = input_image.resize((768, 768))  # Resize the input image to match the model's expected size
+    input_image_resized = input_image.resize((512, 512))
 
     # Generate the prompt based on the desired emotion
-    prompt = f"The original image slightly modified to convey {desired_emotion} while keeping the overall content and design similar."
+    prompt = f"The original image with subtle changes to convey a sense of {desired_emotion}, while preserving the overall content, style, and composition."
 
-    # Initialize the image variable before the loop
-    image = None
-
-    # Generate the image using Stable Diffusion XL
-    generator = torch.Generator("cpu").manual_seed(1024)
-    max_iterations = 10
-    progress_bar = tqdm(total=max_iterations, desc="Generating Image", unit="iteration")
+    max_iterations = 1
     for i in range(max_iterations):
-        try:
-            result = pipe(prompt, num_inference_steps=25, guidance_scale=7.5, generator=generator, init_image=input_image_resized, callback=progress_callback, callback_steps=1)
+        # Generate the image using Stable Diffusion 2.1 img2img with adjusted parameters
+        generator = torch.Generator("cpu").manual_seed(1024)
+        image = pipe(prompt=prompt, image=input_image_resized, num_inference_steps=50, guidance_scale=7, strength=0.4, generator=generator).images[0]
 
-            if result is None or not hasattr(result, 'images') or len(result.images) == 0:
-                raise ValueError("Generated image is None or 'images' key is missing")
+        # Preprocess the generated image for emotion detection
+        image_tensor = transform(image).unsqueeze(0).to("cpu")
 
-            image = result.images[0]
+        # Detect the emotion in the generated image
+        with torch.no_grad():
+            emotion_outputs = emotion_model(image_tensor)
+            _, predicted_emotion_idx = torch.max(emotion_outputs, 1)
+            predicted_emotion = unique_emotions[predicted_emotion_idx.item()]
 
-            # Preprocess the generated image for emotion detection
-            image_tensor = transform(image).unsqueeze(0).to("cpu")
+        print(f"Iteration {i+1}: Detected Emotion - {predicted_emotion}")
 
-            # Detect the emotion in the generated image
-            with torch.no_grad():
-                emotion_outputs = emotion_model(image_tensor)
-                _, predicted_emotion_idx = torch.max(emotion_outputs, 1)
-                predicted_emotion = unique_emotions[predicted_emotion_idx.item()]
+        if predicted_emotion == desired_emotion:
+            print(f"Desired emotion '{desired_emotion}' detected in the generated image.")
+            break
 
-            progress_bar.set_postfix({"Detected Emotion": predicted_emotion})
-
-            if predicted_emotion == desired_emotion:
-                progress_bar.close()
-                print(f"Desired emotion '{desired_emotion}' detected in the generated image.")
-                break
-
-            if i == max_iterations - 1:
-                progress_bar.close()
-                print(f"Maximum iterations reached. The generated image may not strongly convey the desired emotion.")
-        except UnidentifiedImageError as e:
-            print(f"Error loading image: {str(e)}")
-            continue
-        except Exception as e:
-            print(f"Error in iteration {i+1}: {str(e)}")
-            continue
+        if i == max_iterations - 1:
+            print(f"Maximum iterations reached. The generated image may not strongly convey the desired emotion.")
 
     return image
-
-def progress_callback(step: int, timestep: int, latents: torch.FloatTensor) -> None:
-    progress_bar.update(1)
 
 # Get the input image path, desired emotion, and model path from command-line arguments
 input_image_path = sys.argv[1]
@@ -99,8 +76,30 @@ output_image = generate_image_with_emotion(input_image_path, desired_emotion, mo
 
 # Save the generated image
 if output_image is not None:
-    output_image_path = f"EmoGen/outputs/generated_image_{desired_emotion}.jpg"
+    # Get the initial image's name without the extension
+    initial_image_name = os.path.splitext(os.path.basename(input_image_path))[0]
+    
+    # Create the output directory if it doesn't exist
+    output_dir = "outputs"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Generate the base filename for the generated image
+    base_filename = f"{initial_image_name}_{desired_emotion}"
+    
+    # Check if the filename already exists and add a number if necessary
+    counter = 1
+    output_image_path = os.path.join(output_dir, f"{base_filename}.jpg")
+    while os.path.exists(output_image_path):
+        output_image_path = os.path.join(output_dir, f"{base_filename}_{counter}.jpg")
+        counter += 1
+    
+    # Save the generated image
     output_image.save(output_image_path)
     print(f"Generated image saved at: {output_image_path}")
+    
+    # Send the generated image data back to the renderer process
+    with open(output_image_path, 'rb') as file:
+        image_data = file.read()
+        sys.stdout.buffer.write(image_data)
 else:
     print("No image generated.")

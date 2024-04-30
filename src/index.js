@@ -48,9 +48,19 @@ ipcMain.handle('run-script', async (event, { script, emotion, imagePath }) => {
     const pythonProcess = spawn('python', args);
 
     let outputData = '';
+    let progressData = '';
+
     pythonProcess.stdout.on('data', (data) => {
-      console.log('Received data from Python script:', data.toString());
-      outputData += data;
+      const dataString = data.toString();
+      if (dataString.includes('|') && dataString.includes('%')) {
+        // Progress bar output
+        progressData += dataString;
+        console.log('Progress:', progressData.trim());
+      } else {
+        // Regular output
+        outputData += dataString;
+        console.log('Received data from Python script:', dataString.trim());
+      }
     });
 
     pythonProcess.stderr.on('data', (data) => {
@@ -65,6 +75,15 @@ ipcMain.handle('run-script', async (event, { script, emotion, imagePath }) => {
         resolve(result);
       } else {
         reject(new Error('Python script encountered an error'));
+      }
+    });
+
+    pythonProcess.stdout.on('data', (data) => {
+      if (script === 'emotion-generation') {
+        // Image data received from the Python script
+        resolve(data);
+      } else {
+        outputData += data.toString();
       }
     });
   });

@@ -7,7 +7,7 @@ new Vue({
     selectedImage: null,
     detectionResult: null,
     selectedEmotion: 'amusement',
-    generatedImage: null,
+    generatedImageUrl: null,
     imageUrl: null,
     isLoading: false,
   },
@@ -43,7 +43,7 @@ new Vue({
           emotion: this.selectedEmotion,
           imagePath: this.selectedImage.path,
         });
-        this.generatedImage = result;
+        this.generatedImageUrl = URL.createObjectURL(new Blob([result]));
       } catch (error) {
         console.error('An error occurred:', error.message);
       } finally {
@@ -52,7 +52,13 @@ new Vue({
     },
     resetResults() {
       this.detectionResult = null;
-      this.generatedImage = null;
+      this.generatedImageUrl = null;
+    },
+    downloadImage() {
+      const link = document.createElement('a');
+      link.href = this.generatedImageUrl;
+      link.download = 'generated_image.jpg';
+      link.click();
     },
   },
 });
