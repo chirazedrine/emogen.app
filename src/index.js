@@ -34,11 +34,18 @@ ipcMain.handle('run-script', async (event, { script, emotion, imagePath }) => {
   console.log('Received run-script request:', { script, emotion, imagePath });
 
   return new Promise((resolve, reject) => {
-    const scriptPath = path.join(__dirname, `../scripts/${script === 'emotion-detection' ? 'emogen_det.py' : 'emogen_gen.py'}`);
+    const appPath = app.getAppPath();
+    const scriptPath = path.join(appPath, 'scripts', `${script === 'emotion-detection' ? 'emogen_det.py' : 'emogen_gen.py'}`);
     const modelPath = path.join(__dirname, '../models/best_model_v2.pth');
 
     // Execute the script using Python
-    const pythonProcess = spawn('python', [scriptPath, imagePath, modelPath]);
+    const args = [scriptPath, imagePath];
+    if (script === 'emotion-generation') {
+      args.push(emotion, modelPath);
+    } else {
+      args.push(modelPath);
+    }
+    const pythonProcess = spawn('python', args);
 
     let outputData = '';
     pythonProcess.stdout.on('data', (data) => {
@@ -54,7 +61,8 @@ ipcMain.handle('run-script', async (event, { script, emotion, imagePath }) => {
       console.log(`Python script exited with code ${code}`);
 
       if (code === 0) {
-        resolve(outputData.trim());
+        const result = outputData.trim();
+        resolve(result);
       } else {
         reject(new Error('Python script encountered an error'));
       }

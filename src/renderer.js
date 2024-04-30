@@ -9,6 +9,7 @@ new Vue({
     selectedEmotion: 'amusement',
     generatedImage: null,
     imageUrl: null,
+    isLoading: false,
   },
   methods: {
     selectMode(mode) {
@@ -21,6 +22,7 @@ new Vue({
       this.resetResults();
     },
     async runDetection() {
+      this.isLoading = true;
       try {
         const result = await ipcRenderer.invoke('run-script', {
           script: 'emotion-detection',
@@ -29,17 +31,23 @@ new Vue({
         this.detectionResult = result;
       } catch (error) {
         console.error('An error occurred:', error.message);
+      } finally {
+        this.isLoading = false;
       }
     },
     async runGeneration() {
+      this.isLoading = true;
       try {
         const result = await ipcRenderer.invoke('run-script', {
           script: 'emotion-generation',
           emotion: this.selectedEmotion,
+          imagePath: this.selectedImage.path,
         });
         this.generatedImage = result;
       } catch (error) {
         console.error('An error occurred:', error.message);
+      } finally {
+        this.isLoading = false;
       }
     },
     resetResults() {

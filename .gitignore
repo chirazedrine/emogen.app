@@ -42,3 +42,5 @@ logs/
 *.bak
 *.tmp
 *.temp
+
+.env

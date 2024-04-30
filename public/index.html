@@ -31,7 +31,11 @@
               <div v-if="selectedMode === 'detection'">
                 <h3 class="mb-4">Select Image:</h3>
                 <input type="file" class="form-control-file mb-4" @change="onImageSelected">
-                <button class="btn btn-primary" @click="runDetection">Submit</button>
+                <button class="btn btn-primary" @click="runDetection" :disabled="isLoading">Submit</button>
+                <div v-if="isLoading" class="mt-3">
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  Loading...
+                </div>
                 <div class="mt-4" v-if="detectionResult">
                   <h4>Detected Emotion:</h4>
                   <p>{{ detectionResult }}</p>
@@ -39,8 +43,11 @@
               </div>
 
               <div v-if="selectedMode === 'generation'">
-                <h3 class="mb-4">Select Emotion:</h3>
-                <select class="form-control mb-4" v-model="selectedEmotion">
+                <label for="generation-image-input" class="form-label">Select Image:</label>
+                <input type="file" id="generation-image-input" class="form-control mb-4" accept="image/*" @change="onImageSelected">
+
+                <label for="emotion-select" class="form-label">Select Emotion:</label>
+                <select id="emotion-select" class="form-control mb-4" v-model="selectedEmotion">
                   <option value="amusement">Amusement</option>
                   <option value="anger">Anger</option>
                   <option value="awe">Awe</option>
@@ -50,10 +57,15 @@
                   <option value="fear">Fear</option>
                   <option value="sadness">Sadness</option>
                 </select>
-                <button class="btn btn-primary" @click="runGeneration">Generate</button>
-                <div class="mt-4" v-if="generatedImage">
-                  <h4>Generated Image:</h4>
-                  <img :src="generatedImage" class="img-fluid">
+
+                <button class="btn btn-primary" @click="runGeneration" :disabled="isLoading">Generate</button>
+                <div v-if="isLoading" class="mt-3">
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  Loading...
+                </div>
+                <div v-if="generatedImage" class="mt-4">
+                  <h5>Generated Image:</h5>
+                  <img :src="generatedImage" alt="Generated Image" class="img-fluid">
                 </div>
               </div>
             </div>
