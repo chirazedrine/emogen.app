@@ -33,6 +33,37 @@ pip install -r requirements.txt
 npm start
 ```
 
+### Adding an token
+
+To use the Stable Diffusion model in EmoGen, you need to obtain an auth token from Hugging Face and add it to the application. Follow these steps:
+
+1. Create a Hugging Face account:
+
+- Visit [Hugging Face](https://huggingface.co/) and sign up for an account if you don't already have one.
+
+2. Create an access token:
+
+- Go to your Hugging Face account settings.
+- Navigate to the "Access Tokens" section.
+- Click on "New token" and give it a name (e.g., "EmoGen").
+- Select the desired permissions for the token (e.g., "read").
+- Click on "Generate token" to create the access token.
+
+3. Create a .env file in the root folder:
+
+- In the root directory of the EmoGen project, create a new file named .env.
+
+4. Add the access token to the .env file:
+   - Open the .env file in a text editor.
+   - Add the following line, replacing your-access-token with the actual access token you obtained from Hugging Face:
+   ```
+   ACCESS_TOKEN=your-access-token
+   ```
+   - Save the .env file.
+5. The application will now be able to use the Stable Diffusion model with the provided access token.
+
+Note: Make sure to keep your access token confidential and avoid sharing it publicly.
+
 ## Methodology and models
 
 ### Emotion detection
@@ -74,4 +105,4 @@ The following open-source libraries and resources that made this project possibl
 - [PyTorch](https://pytorch.org/)
 - [OpenCV](https://opencv.org/)
 - [NumPy](https://numpy.org/)
-- [StableDiffusionXL](https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9)
+- [StableDiffusionXL 2.1](https://huggingface.co/stabilityai/stable-diffusion-xl-base-2.1)
