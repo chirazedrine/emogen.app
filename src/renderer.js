@@ -43,7 +43,9 @@ new Vue({
           emotion: this.selectedEmotion,
           imagePath: this.selectedImage.path,
         });
-        this.generatedImageUrl = URL.createObjectURL(new Blob([result]));
+        // Remove the code for displaying the generated image
+        // Automatically trigger the download
+        this.downloadImage(result);
       } catch (error) {
         console.error('An error occurred:', error.message);
       } finally {
@@ -54,9 +56,9 @@ new Vue({
       this.detectionResult = null;
       this.generatedImageUrl = null;
     },
-    downloadImage() {
+    downloadImage(imagePath) {
       const link = document.createElement('a');
-      link.href = this.generatedImageUrl;
+      link.href = imagePath;
       link.download = 'generated_image.jpg';
       link.click();
     },

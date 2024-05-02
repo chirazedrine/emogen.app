@@ -23,6 +23,9 @@ def generate_image_with_emotion(input_image_path, desired_emotion, model_path):
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
+     # Detect the available device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     # Load the access token from the .env file
     load_dotenv()
     access_token = os.getenv("ACCESS_TOKEN")
@@ -30,12 +33,19 @@ def generate_image_with_emotion(input_image_path, desired_emotion, model_path):
     # Load Stable Diffusion 2.1 img2img model
     model_id = "stabilityai/stable-diffusion-2-1"
     scheduler = DPMSolverMultistepScheduler.from_pretrained(model_id, subfolder="scheduler", use_auth_token=access_token)
-    pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, scheduler=scheduler, torch_dtype=torch.float32, use_auth_token=access_token)
-    pipe = pipe.to("cpu")
+
+    if device.type == "cuda":
+        # Disable TF32 (if using an NVIDIA GPU that doesn't support TF32)
+        torch.backends.cudnn.allow_tf32 = False
+        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, scheduler=scheduler, torch_dtype=torch.float16, variant='fp16', use_auth_token=access_token)
+    else:
+        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, scheduler=scheduler, use_auth_token=access_token)
+
+    pipe = pipe.to(device)
 
     # Load and preprocess the input image
     input_image = Image.open(input_image_path).convert("RGB")
-    input_image_resized = input_image.resize((512, 512))
+    input_image_resized = input_image.resize((384, 384))  # Adjust the image size if needed
 
     # Generate the prompt based on the desired emotion
     prompt = f"The original image with subtle changes to convey a sense of {desired_emotion}, while preserving the overall content, style, and composition."
@@ -44,7 +54,7 @@ def generate_image_with_emotion(input_image_path, desired_emotion, model_path):
     for i in range(max_iterations):
         # Generate the image using Stable Diffusion 2.1 img2img with adjusted parameters
         generator = torch.Generator("cpu").manual_seed(1024)
-        image = pipe(prompt=prompt, image=input_image_resized, num_inference_steps=50, guidance_scale=7, strength=0.4, generator=generator).images[0]
+        image = pipe(prompt=prompt, image=input_image_resized, num_inference_steps=30, guidance_scale=17, strength=0.2, generator=generator).images[0]
 
         # Preprocess the generated image for emotion detection
         image_tensor = transform(image).unsqueeze(0).to("cpu")
